@@ -1,7 +1,7 @@
 
 import { EventEmitter } from 'events'
 import { RequestInit } from 'node-fetch'
-import puppeteer from 'puppeteer'
+import * as puppeteer from 'puppeteer'
 
 declare namespace WAWebJS {
 
@@ -399,10 +399,10 @@ declare namespace WAWebJS {
      * Remote store interface
      */
     export interface Store {
-        sessionExists: ({session: string}) => Promise<boolean> | boolean,
-        delete: ({session: string}) => Promise<any> | any,
-        save: ({session: string}) => Promise<any> | any,
-        extract: ({session: string, path: string}) => Promise<any> | any,
+        sessionExists: (options: { session: string }) => Promise<boolean> | boolean,
+        delete: (options: { session: string }) => Promise<any> | any,
+        save: (options: { session: string }) => Promise<any> | any,
+        extract: (options: { session: string, path: string }) => Promise<any> | any,
     }
 
     /**
@@ -1062,6 +1062,10 @@ declare namespace WAWebJS {
          * Set this to Infinity to load all messages.
          */
         limit?: number
+        /**
+        * Return only messages from the bot number or vise versa. To get all messages, leave the option undefined.
+        */
+        fromMe?: boolean
     }
 
     /**
