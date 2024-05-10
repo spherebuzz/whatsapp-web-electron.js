@@ -75,10 +75,9 @@ class Client extends EventEmitter {
 
         this.authStrategy.setup(this);
 
-        /**
-         * @type {puppeteer.Browser}
-         */
-        this.pupBrowser = null;
+        this.pupBrowser = puppeteerBrowser;
+        this.browserWindow = browserWindow;
+
         /**
          * @type {puppeteer.Page}
          */
