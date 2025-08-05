@@ -862,6 +862,14 @@ class Client extends EventEmitter {
      */
     
     /**
+     * Sphere message options.
+     * @typedef {Object} SphereMessageSendOptions
+     * @property {string} [quotedMessageId] - Id of the message that is being quoted (or replied to)
+     * @property {GroupMention[]} [groupMentions] - An array of object that handle group mentions
+     * @property {string[]} [mentions] - User IDs to mention in the message
+     */
+
+    /**
      * Send a message to a specific chatId
      * @param {string} chatId
      * @param {string|MessageMedia|Location|Poll|Contact|Array<Contact>|Buttons|List} content
@@ -972,6 +980,47 @@ class Client extends EventEmitter {
         return sentMsg
             ? new Message(this, sentMsg)
             : undefined;
+    }
+
+    /**
+     * Send a simple text message to a specific chatId
+     * @param {string} chatId
+     * @param {string} content
+     * @param {SphereMessageSendOptions} [options] - Options used when sending the message
+     * 
+     * @returns {Promise<string>} ID of message that was just sent
+     */
+    async sendSphereMessage(chatId, content, options = {}) {
+        if (options.mentions) {
+            !Array.isArray(options.mentions) && (options.mentions = [options.mentions]);
+            if (options.mentions.some((possiblyContact) => possiblyContact instanceof Contact)) {
+                console.warn('Mentions with an array of Contact are now deprecated. See more at https://github.com/pedroslopez/whatsapp-web.js/pull/2166.');
+                options.mentions = options.mentions.map((a) => a.id._serialized);
+            }
+        }
+
+        options.groupMentions && !Array.isArray(options.groupMentions) && (options.groupMentions = [options.groupMentions]);
+        
+        let internalOptions = {
+            linkPreview: true,
+            quotedMessageId: options.quotedMessageId,
+            mentionedJidList: options.mentions || [],
+            groupMentions: options.groupMentions,
+            ignoreQuoteErrors: true
+        };
+
+        const sentMsgId = await this.pupPage.evaluate(async (chatId, content, options) => {
+            const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
+
+            if (!chat) return null;
+
+            await window.WWebJS.sendSeen(chatId);
+
+            const msgId = await window.WWebJS.sendSphereMessage(chat, content, options);
+            return msgId;
+        }, chatId, content, internalOptions);
+
+        return sentMsgId;
     }
 
     /**
