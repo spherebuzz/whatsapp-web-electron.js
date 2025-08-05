@@ -168,6 +168,9 @@ declare namespace WAWebJS {
         /** Send a message to a specific chatId */
         sendMessage(chatId: string, content: MessageContent, options?: MessageSendOptions): Promise<Message>
 
+        /** Send a simple Sphere message to a specific chatId */
+        sendSphereMessage(chatId: string, content: string, options?: SphereMessageSendOptions): Promise<string>
+
         /** Sends a channel admin invitation to a user, allowing them to become an admin of the channel */
         sendChannelAdminInvite(chatId: string, channelId: string, options?: { comment?: string }): Promise<boolean>
         
@@ -1280,6 +1283,21 @@ declare namespace WAWebJS {
         /** Should the bot send a quoted message without the quoted message if it fails to get the quote?
          * @default true (enabled) */
         ignoreQuoteErrors?: boolean
+    }
+
+    /** Options for sending a Sphere message */
+    export interface SphereMessageSendOptions {
+        /** Id of the message that is being quoted (or replied to) */
+        quotedMessageId?: string
+        /** User IDs to mention in the message */
+        mentions?: string[]
+        /** An array of object that handle group mentions */
+        groupMentions?: {
+            /** The name of a group to mention (can be custom) */
+            subject: string,
+            /** The group ID, e.g.: 'XXXXXXXXXX@g.us' */
+            id: string
+        }[]
     }
 
     /** Options for editing a message */
