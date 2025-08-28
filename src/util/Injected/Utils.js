@@ -309,6 +309,90 @@ exports.LoadUtils = () => {
         return window.Store.Msg.get(newMsgKey._serialized);
     };
 	
+    window.WWebJS.sendSphereMessage = async (chat, content, options = {}) => {
+        let quotedMsgOptions = {};
+        if (options.quotedMessageId) {
+            let quotedMessage = window.Store.Msg.get(options.quotedMessageId);
+            !quotedMessage && (quotedMessage = (await window.Store.Msg.getMessagesById([options.quotedMessageId]))?.messages?.[0]);
+            if (quotedMessage) {
+
+                const canReply = window.Store.ReplyUtils
+                    ? window.Store.ReplyUtils.canReplyMsg(quotedMessage.unsafe())
+                    : quotedMessage.canReply();
+
+                if (canReply) {
+                    quotedMsgOptions = quotedMessage.msgContextInfo(chat);
+                }
+            } else {
+                if (!options.ignoreQuoteErrors) {
+                    throw new Error('Could not get the quoted message.');
+                }
+            }
+            
+            delete options.ignoreQuoteErrors;
+            delete options.quotedMessageId;
+        }
+
+        if (options.mentionedJidList) {
+            options.mentionedJidList = await Promise.all(
+                options.mentionedJidList.map(async (id) => {
+                    const wid = window.Store.WidFactory.createWid(id);
+                    if (await window.Store.QueryExist(wid)) {
+                        return wid;
+                    }
+                })
+            );
+            options.mentionedJidList = options.mentionedJidList.filter(Boolean);
+        }
+
+        if (options.groupMentions) {
+            options.groupMentions = options.groupMentions.map((e) => ({
+                groupSubject: e.subject,
+                groupJid: window.Store.WidFactory.createWid(e.id)
+            }));
+        }
+
+        const lidUser = window.Store.User.getMaybeMeLidUser();
+        const meUser = window.Store.User.getMaybeMeUser();
+        const newId = await window.Store.MsgKey.newId();
+        let from = chat.id.isLid() ? lidUser : meUser;
+        let participant;
+
+        if (chat.isGroup) {
+            from = chat.groupMetadata && chat.groupMetadata.isLidAddressingMode ? lidUser : meUser;
+            participant = window.Store.WidFactory.toUserWid(from);
+        }
+
+        const newMsgKey = new window.Store.MsgKey({
+            from: from,
+            to: chat.id,
+            id: newId,
+            participant: participant,
+            selfDir: 'out',
+        });
+
+        const ephemeralFields = window.Store.EphemeralFields.getEphemeralFields(chat);
+
+        const message = {
+            ...options,
+            id: newMsgKey,
+            ack: 0,
+            body: content,
+            from: meUser,
+            to: chat.id,
+            local: true,
+            self: 'out',
+            t: parseInt(new Date().getTime() / 1000),
+            isNewMsg: true,
+            type: 'chat',
+            ...ephemeralFields,
+            ...quotedMsgOptions,
+        };
+        
+        await window.Store.SendMessage.addAndSendMsgToChat(chat, message);
+        return newId;
+    };
+
     window.WWebJS.editMessage = async (msg, content, options = {}) => {
         const extraOptions = options.extraOptions || {};
         delete options.extraOptions;
