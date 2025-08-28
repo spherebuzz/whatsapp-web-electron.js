@@ -1451,7 +1451,7 @@ class Client extends EventEmitter {
                 return window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')
                     ? await window.Store.ProfilePic.profilePicFind(chatWid)
                     : (
-                        await this.getCachedProfilePic(chatWid) ??
+                        await window.Store.ProfilePicThumb.get(contactId) ??
                         await window.Store.ProfilePic.requestProfilePicFromServer(chatWid)
                     )
             } catch (err) {
