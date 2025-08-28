@@ -1401,7 +1401,10 @@ class Client extends EventEmitter {
                 const chatWid = window.Store.WidFactory.createWid(contactId);
                 return window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')
                     ? await window.Store.ProfilePic.profilePicFind(chatWid)
-                    : await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
+                    : (
+                        await this.getCachedProfilePic(chatWid) ??
+                        await window.Store.ProfilePic.requestProfilePicFromServer(chatWid)
+                    )
             } catch (err) {
                 if(err.name === 'ServerStatusCodeError') return undefined;
                 throw err;
@@ -1409,6 +1412,11 @@ class Client extends EventEmitter {
         }, contactId);
         
         return profilePic ? profilePic.eurl : undefined;
+    }
+
+    async getCachedProfilePic(contactId) {
+        const profilePic = await window.Store.ProfilePicThumb.get(contactId);
+        return profilePic?.previewEurl;
     }
 
     /**
