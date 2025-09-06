@@ -385,7 +385,7 @@ exports.LoadUtils = () => {
 
         if (chat.isGroup) {
             from = chat.groupMetadata && chat.groupMetadata.isLidAddressingMode ? lidUser : meUser;
-            participant = window.Store.WidFactory.toUserWid(from);
+            participant = window.Store.WidFactory.asUserWidOrThrow(from);
         }
 
         const newMsgKey = new window.Store.MsgKey({
