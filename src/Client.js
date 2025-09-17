@@ -1175,6 +1175,18 @@ class Client extends EventEmitter {
     }
 
     /**
+     * Get all current chat instances
+     * @returns {Promise<Array<Chat>>}
+     */
+    async getSphereChats() {
+        const chats = await this.pupPage.evaluate(async () => {
+            return await window.WWebJS.getSphereChats();
+        });
+
+        return chats.map(chat => ChatFactory.create(this, chat));
+    }
+
+    /**
      * Gets all cached {@link Channel} instance
      * @returns {Promise<Array<Channel>>}
      */

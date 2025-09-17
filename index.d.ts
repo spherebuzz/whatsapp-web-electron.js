@@ -90,6 +90,9 @@ declare namespace WAWebJS {
         /** Get all current chat instances */
         getChats(): Promise<Chat[]>
 
+        /** Get all current chat instances */
+        getSphereChats(): Promise<Chat[]>
+
         /** Gets all cached {@link Channel} instances */
         getChannels(): Promise<Channel[]>
 

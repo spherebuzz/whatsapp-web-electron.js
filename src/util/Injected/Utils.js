@@ -666,6 +666,12 @@ exports.LoadUtils = () => {
         return await Promise.all(chatPromises);
     };
 
+    window.WWebJS.getSphereChats = async () => {
+        const chats = window.Store.Chat.getModelsArray();
+        const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+        return await Promise.all(chatPromises);
+    };
+
     window.WWebJS.getChannels = async () => {
         const channels = window.Store.NewsletterCollection.getModelsArray();
         const channelPromises = channels?.map((channel) => window.WWebJS.getChatModel(channel, { isChannel: true }));
@@ -697,6 +703,43 @@ exports.LoadUtils = () => {
 
         if (chat.newsletterMetadata) {
             await window.Store.NewsletterMetadataCollection.update(chat.id);
+            model.channelMetadata = chat.newsletterMetadata.serialize();
+            model.channelMetadata.createdAtTs = chat.newsletterMetadata.creationTime;
+        }
+
+        model.lastMessage = null;
+        if (model.msgs && model.msgs.length) {
+            const lastMessage = chat.lastReceivedKey
+                ? window.Store.Msg.get(chat.lastReceivedKey._serialized) || (await window.Store.Msg.getMessagesById([chat.lastReceivedKey._serialized]))?.messages?.[0]
+                : null;
+            lastMessage && (model.lastMessage = window.WWebJS.getMessageModel(lastMessage));
+        }
+
+        delete model.msgs;
+        delete model.msgUnsyncedButtonReplyMsgs;
+        delete model.unsyncedButtonReplies;
+
+        return model;
+    };
+
+    window.WWebJS.getSphereChatModel = async (chat) => {
+        if (!chat) return null;
+
+        const model = chat.serialize();
+        model.isGroup = false;
+        model.isMuted = chat.mute?.expiration !== 0;
+        model.formattedTitle = chat.formattedTitle;
+
+        if (chat.groupMetadata) {
+            model.isGroup = true;
+            chat.groupMetadata.participants._models
+                .filter(x => x.id?._serialized?.endsWith('@lid'))
+                .forEach(x => x.contact?.phoneNumber && (x.id = x.contact.phoneNumber));
+            model.groupMetadata = chat.groupMetadata.serialize();
+            model.isReadOnly = chat.groupMetadata.announce;
+        }
+
+        if (chat.newsletterMetadata) {
             model.channelMetadata = chat.newsletterMetadata.serialize();
             model.channelMetadata.createdAtTs = chat.newsletterMetadata.creationTime;
         }
