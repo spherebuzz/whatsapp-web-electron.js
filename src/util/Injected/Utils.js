@@ -383,7 +383,7 @@ exports.LoadUtils = () => {
         let from = chat.id.isLid() ? lidUser : meUser;
         let participant;
 
-        if (chat.isGroup) {
+        if (typeof chat.id?.isGroup === 'function' && chat.id.isGroup()) {
             from = chat.groupMetadata && chat.groupMetadata.isLidAddressingMode ? lidUser : meUser;
             participant = window.Store.WidFactory.asUserWidOrThrow(from);
         }
@@ -414,7 +414,11 @@ exports.LoadUtils = () => {
             ...quotedMsgOptions,
         };
         
-        await window.Store.SendMessage.addAndSendMsgToChat(chat, message);
+        const [msgPromise, sendMsgResultPromise] = window.Store.SendMessage.addAndSendMsgToChat(chat, message);
+        await msgPromise;
+
+        if (options.waitUntilMsgSent) await sendMsgResultPromise;
+
         return newId;
     };
 
@@ -750,6 +754,22 @@ exports.LoadUtils = () => {
                 ? window.Store.Msg.get(chat.lastReceivedKey._serialized) || (await window.Store.Msg.getMessagesById([chat.lastReceivedKey._serialized]))?.messages?.[0]
                 : null;
             lastMessage && (model.lastMessage = window.WWebJS.getMessageModel(lastMessage));
+        }
+
+        const now = new Date();
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+        const oneMonthAgoSeconds = Math.floor(oneMonthAgo.getTime() / 1000);
+        if (chat.groupMetadata &&
+            model.lastMessage &&
+            //To reduce the work done by these two lines of code (which are very slow)
+            //Only call for group conversations with more recent messages
+            //The error when not running this code is intermittently, users/message receivers will see
+            //"Waiting for this message. This may take a while"
+            model.lastMessage.timestamp > oneMonthAgoSeconds
+        ) {
+            const chatWid = window.Store.WidFactory.createWid(chat.id._serialized);
+            await window.Store.GroupMetadata.update(chatWid);
         }
 
         delete model.msgs;
