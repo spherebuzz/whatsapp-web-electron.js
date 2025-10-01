@@ -383,7 +383,7 @@ exports.LoadUtils = () => {
         let from = chat.id.isLid() ? lidUser : meUser;
         let participant;
 
-        if (chat.isGroup) {
+        if (typeof chat.id?.isGroup === 'function' && chat.id.isGroup()) {
             from = chat.groupMetadata && chat.groupMetadata.isLidAddressingMode ? lidUser : meUser;
             participant = window.Store.WidFactory.asUserWidOrThrow(from);
         }
@@ -414,7 +414,11 @@ exports.LoadUtils = () => {
             ...quotedMsgOptions,
         };
         
-        await window.Store.SendMessage.addAndSendMsgToChat(chat, message);
+        const [msgPromise, sendMsgResultPromise] = window.Store.SendMessage.addAndSendMsgToChat(chat, message);
+        await msgPromise;
+
+        if (options.waitUntilMsgSent) await sendMsgResultPromise;
+
         return newId;
     };
 
