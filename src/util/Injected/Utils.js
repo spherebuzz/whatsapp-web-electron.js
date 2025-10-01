@@ -752,6 +752,29 @@ exports.LoadUtils = () => {
             lastMessage && (model.lastMessage = window.WWebJS.getMessageModel(lastMessage));
         }
 
+        const now = new Date();
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+        const oneMonthAgoSeconds = Math.floor(oneMonthAgo.getTime() / 1000);
+        if (chat.groupMetadata) {
+            const chatWid = window.Store.WidFactory.createWid(chat.id._serialized);
+
+            //The GroupMetadata.update seems to be necessary to ensure exchange of keys between all
+            //members of the group conversation. If the line is removed then occasionally a 
+            //blast message is not decryptable by end contacts (error message shown to users:
+            //"Waiting for this message. This may take a while")
+            if (model.lastMessage &&
+                model.lastMessage.timestamp > oneMonthAgoSeconds
+            ) {
+                //The update method is very slow for some groups, so only await the most recent
+                //conversations. But all still need updating for ensuring messages are blasted
+                //see above
+                await window.Store.GroupMetadata.update(chatWid);
+            } else {
+                window.Store.GroupMetadata.update(chatWid);
+            }
+        }
+
         delete model.msgs;
         delete model.msgUnsyncedButtonReplyMsgs;
         delete model.unsyncedButtonReplies;
