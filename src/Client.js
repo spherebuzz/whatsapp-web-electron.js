@@ -1589,37 +1589,37 @@ class Client extends EventEmitter {
      * @returns {Promise<string>}
      */
     async getSphereProfilePicUrl(contactId) {
-        const profilePic = await this.pupPage.evaluate(async contactId => {
+        const profilePicUrl = await this.pupPage.evaluate(async contactId => {
             try {
                 const chatWid = window.Store.WidFactory.createWid(contactId);
 
                 if (window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')) {
                     const profilePic = await window.Store.ProfilePic.profilePicFind(chatWid);
                     if (profilePic) {
-                        return `Old: ${profilePic.eurl}-${profilePic.url}-${profilePic.previewEurl}`;
+                        return profilePic.eurl;
                     } else {
-                        return "Old WWeb Version";
+                        return undefined;
                     }
                 } else {
                     const cachedProfilePic = await window.Store.ProfilePicThumb.get(contactId);
                     if (cachedProfilePic) {
-                        return `Cached: ${cachedProfilePic.eurl}-${cachedProfilePic.url}-${cachedProfilePic.previewEurl}`;
+                        return cachedProfilePic.eurl;
                     } else {
                         const serverProfilePic = await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
                         if (serverProfilePic) {
-                            return `Server: ${serverProfilePic.eurl}-${serverProfilePic.url}-${serverProfilePic.previewEurl}`;
+                            return serverProfilePic.eurl;
                         } else {
-                            return "no cached or server profile pic";
+                            return undefined;
                         }
                     }
                 }
             } catch (err) {
-                if(err.name === 'ServerStatusCodeError') return "server status code error";
+                if(err.name === 'ServerStatusCodeError') return undefined;
                 throw err;
             }
         }, contactId);
         
-        return profilePic;
+        return profilePicUrl;
     }
 
     async getCachedProfilePic(contactId) {
