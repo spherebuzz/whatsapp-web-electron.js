@@ -1583,6 +1583,45 @@ class Client extends EventEmitter {
         return profilePic ? profilePic.eurl : undefined;
     }
 
+    /**
+     * Returns the contact ID's profile picture URL, if privacy settings allow it
+     * @param {string} contactId the whatsapp user's ID
+     * @returns {Promise<string>}
+     */
+    async getSphereProfilePicUrl(contactId) {
+        const profilePic = await this.pupPage.evaluate(async contactId => {
+            try {
+                const chatWid = window.Store.WidFactory.createWid(contactId);
+
+                if (window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')) {
+                    const profilePic = await window.Store.ProfilePic.profilePicFind(chatWid);
+                    if (profilePic) {
+                        return `Old: ${profilePic.eurl}-${profilePic.url}-${profilePic.previewEurl}`;
+                    } else {
+                        return "Old WWeb Version";
+                    }
+                } else {
+                    const cachedProfilePic = await window.Store.ProfilePicThumb.get(contactId);
+                    if (cachedProfilePic) {
+                        return `Cached: ${cachedProfilePic.eurl}-${cachedProfilePic.url}-${cachedProfilePic.previewEurl}`;
+                    } else {
+                        const serverProfilePic = await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
+                        if (serverProfilePic) {
+                            return `Server: ${serverProfilePic.eurl}-${serverProfilePic.url}-${serverProfilePic.previewEurl}`;
+                        } else {
+                            return "no cached or server profile pic";
+                        }
+                    }
+                }
+            } catch (err) {
+                if(err.name === 'ServerStatusCodeError') return "server status code error";
+                throw err;
+            }
+        }, contactId);
+        
+        return profilePic;
+    }
+
     async getCachedProfilePic(contactId) {
         const profilePic = await window.Store.ProfilePicThumb.get(contactId);
         return profilePic?.previewEurl;
