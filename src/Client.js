@@ -1580,11 +1580,15 @@ class Client extends EventEmitter {
             }
         }, contactId);
         
-        return profilePic ? `${profilePic.eurl}` : undefined;
+        return profilePic ? profilePic.eurl : undefined;
     }
 
     /**
      * Returns the contact ID's profile picture URL, if privacy settings allow it
+     * In order to get profile pics to be consistently received, we have to 
+     * generate a string in format "{Prefix}: {url}---{url2}"
+     * The prefix is Cch, Svr or Old and only the first url is required
+     * Don't ask me why it works, but it does!
      * @param {string} contactId the whatsapp user's ID
      * @returns {Promise<string>}
      */
