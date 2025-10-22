@@ -1596,18 +1596,18 @@ class Client extends EventEmitter {
                 if (window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')) {
                     const profilePic = await window.Store.ProfilePic.profilePicFind(chatWid);
                     if (profilePic) {
-                        return `${profilePic.eurl ?? profilePic.previewEurl}`;
+                        return `Old: ${profilePic.eurl}---${profilePic.previewEurl}`;
                     } else {
                         return undefined;
                     }
                 } else {
                     const cachedProfilePic = await window.Store.ProfilePicThumb.get(contactId);
                     if (cachedProfilePic) {
-                        return `${cachedProfilePic.eurl ?? cachedProfilePic.previewEurl}`;
+                        return `Cch: ${cachedProfilePic.eurl}---${cachedProfilePic.previewEurl}`;
                     } else {
                         const serverProfilePic = await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
                         if (serverProfilePic) {
-                            return `${serverProfilePic.eurl ?? serverProfilePic.previewEurl}`;
+                            return `Svr: ${serverProfilePic.eurl}---${serverProfilePic.previewEurl}`;
                         } else {
                             return undefined;
                         }
