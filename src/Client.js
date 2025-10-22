@@ -1583,6 +1583,49 @@ class Client extends EventEmitter {
         return profilePic ? profilePic.eurl : undefined;
     }
 
+    /**
+     * Returns the contact ID's profile picture URL, if privacy settings allow it
+     * In order to get profile pics to be consistently received, we have to 
+     * generate a string in format "{Prefix}: {url}---{url2}"
+     * The prefix is Cch, Svr or Old and only the first url is required
+     * Don't ask me why it works, but it does!
+     * @param {string} contactId the whatsapp user's ID
+     * @returns {Promise<string>}
+     */
+    async getSphereProfilePicUrl(contactId) {
+        const profilePicUrl = await this.pupPage.evaluate(async contactId => {
+            try {
+                const chatWid = window.Store.WidFactory.createWid(contactId);
+
+                if (window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')) {
+                    const profilePic = await window.Store.ProfilePic.profilePicFind(chatWid);
+                    if (profilePic) {
+                        return `Old: ${profilePic.eurl}---${profilePic.previewEurl}`;
+                    } else {
+                        return undefined;
+                    }
+                } else {
+                    const cachedProfilePic = await window.Store.ProfilePicThumb.get(contactId);
+                    if (cachedProfilePic) {
+                        return `Cch: ${cachedProfilePic.eurl}---${cachedProfilePic.previewEurl}`;
+                    } else {
+                        const serverProfilePic = await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
+                        if (serverProfilePic) {
+                            return `Svr: ${serverProfilePic.eurl}---${serverProfilePic.previewEurl}`;
+                        } else {
+                            return undefined;
+                        }
+                    }
+                }
+            } catch (err) {
+                if(err.name === 'ServerStatusCodeError') return undefined;
+                throw err;
+            }
+        }, contactId);
+        
+        return profilePicUrl;
+    }
+
     async getCachedProfilePic(contactId) {
         const profilePic = await window.Store.ProfilePicThumb.get(contactId);
         return profilePic?.previewEurl;
