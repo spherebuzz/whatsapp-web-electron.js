@@ -1580,7 +1580,7 @@ class Client extends EventEmitter {
             }
         }, contactId);
         
-        return profilePic ? profilePic.eurl : undefined;
+        return profilePic ? `${profilePic.eurl}` : undefined;
     }
 
     /**
@@ -1596,18 +1596,18 @@ class Client extends EventEmitter {
                 if (window.compareWwebVersions(window.Debug.VERSION, '<', '2.3000.0')) {
                     const profilePic = await window.Store.ProfilePic.profilePicFind(chatWid);
                     if (profilePic) {
-                        return profilePic.eurl;
+                        return `${profilePic.eurl ?? profilePic.previewEurl}`;
                     } else {
                         return undefined;
                     }
                 } else {
                     const cachedProfilePic = await window.Store.ProfilePicThumb.get(contactId);
                     if (cachedProfilePic) {
-                        return cachedProfilePic.eurl;
+                        return `${cachedProfilePic.eurl ?? cachedProfilePic.previewEurl}`;
                     } else {
                         const serverProfilePic = await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
                         if (serverProfilePic) {
-                            return serverProfilePic.eurl;
+                            return `${serverProfilePic.eurl ?? serverProfilePic.previewEurl}`;
                         } else {
                             return undefined;
                         }
