@@ -335,6 +335,23 @@ exports.LoadUtils = () => {
     };
 	
     window.WWebJS.sendSphereMessage = async (chat, content, options = {}) => {
+        let mediaOptions = {};
+        if (options.media) {
+            mediaOptions =  await window.WWebJS.processMediaData(options.media, {
+                forceSticker: false,
+                forceGif: false,
+                forceVoice: false,
+                forceDocument: false,
+                forceMediaHd: false,
+                sendToChannel: false
+            });
+            mediaOptions.caption = options.caption;
+            content = mediaOptions.preview;
+            mediaOptions.isViewOnce = false;
+
+            delete options.media;
+        }
+
         let quotedMsgOptions = {};
         if (options.quotedMessageId) {
             let quotedMessage = window.Store.Msg.get(options.quotedMessageId);
@@ -412,6 +429,8 @@ exports.LoadUtils = () => {
             type: 'chat',
             ...ephemeralFields,
             ...quotedMsgOptions,
+            ...mediaOptions,
+            ...(mediaOptions.toJSON ? mediaOptions.toJSON() : {}),
         };
         
         const [msgPromise, sendMsgResultPromise] = window.Store.SendMessage.addAndSendMsgToChat(chat, message);

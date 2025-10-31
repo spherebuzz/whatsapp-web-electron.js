@@ -945,6 +945,7 @@ class Client extends EventEmitter {
     /**
      * Sphere message options.
      * @typedef {Object} SphereMessageSendOptions
+     * @property {string} [caption] - Image or video caption
      * @property {string} [quotedMessageId] - Id of the message that is being quoted (or replied to)
      * @property {GroupMention[]} [groupMentions] - An array of object that handle group mentions
      * @property {string[]} [mentions] - User IDs to mention in the message
@@ -1070,7 +1071,7 @@ class Client extends EventEmitter {
     /**
      * Send a simple text message to a specific chatId
      * @param {string} chatId
-     * @param {string} content
+     * @param {string|MessageMedia} content
      * @param {SphereMessageSendOptions} [options] - Options used when sending the message
      * 
      * @returns {Promise<string>} ID of message that was just sent
@@ -1088,11 +1089,17 @@ class Client extends EventEmitter {
         
         let internalOptions = {
             linkPreview: true,
+            caption: options.caption,
             quotedMessageId: options.quotedMessageId,
             mentionedJidList: options.mentions || [],
             groupMentions: options.groupMentions,
             ignoreQuoteErrors: true
         };
+
+        if (content instanceof MessageMedia) {
+            internalOptions.media = content;
+            content = '';
+        }
 
         const sentMsgId = await this.pupPage.evaluate(async (chatId, content, options) => {
             const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
