@@ -179,7 +179,7 @@ declare namespace WAWebJS {
         sendMessage(chatId: string, content: MessageContent, options?: MessageSendOptions): Promise<Message>
 
         /** Send a simple Sphere message to a specific chatId */
-        sendSphereMessage(chatId: string, content: string, options?: SphereMessageSendOptions): Promise<string>
+        sendSphereMessage(chatId: string, content: string | MessageMedia, options?: SphereMessageSendOptions): Promise<string>
 
         /** Sends a channel admin invitation to a user, allowing them to become an admin of the channel */
         sendChannelAdminInvite(chatId: string, channelId: string, options?: { comment?: string }): Promise<boolean>
@@ -1141,7 +1141,7 @@ declare namespace WAWebJS {
         /** Deletes the message from the chat */
         delete: (everyone?: boolean, clearMedia?: boolean) => Promise<void>,
         /** Downloads and returns the attached message media */
-        downloadMedia: (timeoutMs?: number) => Promise<MessageMedia>,
+        downloadMedia: (timeoutMs?: number) => Promise<MessageMedia | undefined>,
         /** Returns the Chat this message was sent in */
         getChat: () => Promise<Chat>,
         /** Returns the Contact this message was sent from */
@@ -1405,6 +1405,8 @@ declare namespace WAWebJS {
 
     /** Options for sending a Sphere message */
     export interface SphereMessageSendOptions {
+        /** Image or videos caption */
+        caption?: string
         /** Id of the message that is being quoted (or replied to) */
         quotedMessageId?: string
         /** User IDs to mention in the message */
