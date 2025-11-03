@@ -1141,7 +1141,7 @@ declare namespace WAWebJS {
         /** Deletes the message from the chat */
         delete: (everyone?: boolean, clearMedia?: boolean) => Promise<void>,
         /** Downloads and returns the attached message media */
-        downloadMedia: (timeoutMs?: number) => Promise<MessageMedia>,
+        downloadMedia: (timeoutMs?: number) => Promise<MessageMedia | undefined>,
         /** Returns the Chat this message was sent in */
         getChat: () => Promise<Chat>,
         /** Returns the Contact this message was sent from */
