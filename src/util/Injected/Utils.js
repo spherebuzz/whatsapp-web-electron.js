@@ -1,37 +1,5 @@
 'use strict';
 
-class CancellationToken {
-    constructor() {
-        this._isCancelled = false;
-        this.cancelCallbacks = [];
-    }
-
-    get isCancelled() {
-        return this._isCancelled;
-    }
-
-    cancel() {
-        this._isCancelled = true;
-        this.cancelCallbacks.forEach(cb => cb());
-    }
-
-    onCancel(callback) {
-        if (this.isCancelled) {
-            callback();
-        } else {
-            this.cancelCallbacks.push(callback);
-        }
-    }
-
-    throwIfCancelled() {
-        if (this._isCancelled) {
-        throw new CancelledError("Operation cancelled");
-        }
-    }
-}
-
-export class CancelledError extends Error {}
-
 exports.LoadUtils = () => {
     window.WWebJS = {};
 
@@ -746,10 +714,9 @@ exports.LoadUtils = () => {
         },
         cancellationToken,
         timeoutMs,
-        errorMessagePrefix, {
-            onAnyError: (err) => {
-                return { ChatModels: undefined, Error: err };
-            }
+        errorMessagePrefix,
+        (err) => {
+            return { ChatModels: undefined, Error: err };
         });
     };
 
@@ -757,22 +724,19 @@ exports.LoadUtils = () => {
         action,
         cancellationToken,
         timeoutMs,
-        errorMessagePrefix, {
-        onTimeoutError,
-        onCancelledError,
-        onAnyError
-        } = {}
+        errorMessagePrefix, 
+        onError
     ) {
         try {
             const workPromise = (async () => {
                 if (cancellationToken.isCancelled()) {
-                    throw new CancelledError(errorMessagePrefix + ": Operation cancelled before start");
+                    throw new Error(errorMessagePrefix + ": Operation cancelled before start");
                 }
 
                 const result = await action(cancellationToken);
 
                 if (cancellationToken.isCancelled()) {
-                    throw new CancelledError(errorMessagePrefix + ": Operation cancelled after action");
+                    throw new Error(errorMessagePrefix + ": Operation cancelled after action");
                 }
 
                 return result;
@@ -784,9 +748,9 @@ exports.LoadUtils = () => {
 
             const cancelPromise = new Promise((_, reject) => {
                 if (cancellationToken.isCancelled()) {
-                    reject(new CancelledError(errorMessagePrefix + ": Operation cancelled during action(1)"));
+                    reject(new Error(errorMessagePrefix + ": Operation cancelled during action(1)"));
                 } else {
-                    cancellationToken.onCancel(() => reject(new CancelledError(errorMessagePrefix + ": Operation cancelled during action(2)")))
+                    cancellationToken.onCancel(() => reject(new Error(errorMessagePrefix + ": Operation cancelled during action(2)")))
                 }
             });
 
@@ -796,57 +760,13 @@ exports.LoadUtils = () => {
                 cancelPromise
             ]);
         } catch (err) {
-            if (err instanceof TimeoutError) {
-                if (onTimeoutError) {
-                    onTimeoutError(err);
-                } else if (onAnyError) {
-                    onAnyError(err);
-                } else {
-                    console.error(err);
-                }
-            } else if (err instanceof CancelledError) {
-                if (onCancelledError) {
-                    onCancelledError(err);
-                } else if (onAnyError) {
-                    onAnyError(err);
-                } else {
-                    console.error(err);
-                }
+            if (onError) {
+                onError(err);
             } else {
-                if (onAnyError) {
-                    onAnyError(err);
-                } else {
-                    console.error(err);
-                }
+                console.error(err);
             }
         }
     }
-
-    async function withTimeout(action, timeoutMs, timedOutMessagePrefix) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const result = await Promise.race([
-                    action(),
-                    new Promise((_, reject) => {
-                        setTimeout(() => {
-                            reject(new TimeoutError(timedOutMessagePrefix));
-                        }, timeoutMs);
-                    })
-                ]);
-
-                resolve(result);
-            } catch (err) {
-                reject(err);
-            }
-        });
-    }
-
-    class TimeoutError extends Error {
-        constructor(message) {
-            super(message ? " Timed out: " + message : " Timed out");
-        }
-    }
-
 
     window.WWebJS.getChannels = async () => {
         const channels = window.Store.NewsletterCollection.getModelsArray();
