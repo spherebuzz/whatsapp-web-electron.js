@@ -1214,7 +1214,7 @@ class Client extends EventEmitter {
      * @returns {Promise<Array<Chat>>}
      */
     async getSphereChats() {
-        const { chats, err } = await this.pupPage.evaluate(async () => {
+        const chats = await this.pupPage.evaluate(async () => {
             return await window.WWebJS.getSphereChats();
         });
 
