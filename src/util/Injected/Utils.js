@@ -690,7 +690,7 @@ exports.LoadUtils = () => {
     };
 
     window.WWebJS.getSphereChats = async (
-        cancellationToken) => {
+        cancellationToken = new CancellationToken()) => {
         let timeoutMs = 2000;
         const errorMessagePrefix = "getSphereChats";
 
@@ -709,8 +709,7 @@ exports.LoadUtils = () => {
             const chats = window.Store.Chat.getModelsArray();
             const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
 
-            const chatModels = await Promise.all(chatPromises);
-            return chatModels;
+            return await Promise.all(chatPromises);
         },
         cancellationToken,
         timeoutMs,

@@ -1,4 +1,4 @@
-class CancellationToken {
+export class CancellationToken {
     constructor() {
         this._isCancelled = false;
         this.cancelCallbacks = [];
