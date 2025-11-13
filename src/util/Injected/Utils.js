@@ -694,30 +694,30 @@ exports.LoadUtils = () => {
         let timeoutMs = 2000;
         const errorMessagePrefix = "getSphereChats";
 
-        let index = 0;
+        //let index = 0;
         return await runWithControl(async (cancellationToken) => {
-            if (index++ % 3 == 0) {
-                throw new Error("An error happening here");
-            } else if (index % 5 == 0) {
-                timeoutMs = 5;
-            } else if (index % 7 == 0) {
-                cancellationToken.cancel();
-            } else {
-                timeoutMs = 2000;
-            }
+            // if (index++ % 3 == 0) {
+            //     throw new Error("An error happening here");
+            // } else if (index % 5 == 0) {
+            //     timeoutMs = 5;
+            // } else if (index % 7 == 0) {
+            //     cancellationToken.cancel();
+            // } else {
+            //     timeoutMs = 2000;
+            // }
 
             const chats = window.Store.Chat.getModelsArray();
             const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
 
             const chatModels = await Promise.all(chatPromises);
-            return { ChatModels: chatModels, Error: undefined };
+            return chatModels;
         },
         cancellationToken,
         timeoutMs,
-        errorMessagePrefix,
-        (err) => {
-            return { ChatModels: undefined, Error: err };
-        });
+        errorMessagePrefix);
+        // (err) => {
+        //     return { ChatModels: undefined, Error: err };
+        // });
     };
 
     async function runWithControl(
@@ -743,7 +743,7 @@ exports.LoadUtils = () => {
             })();
 
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new TimeoutError(errorMessagePrefix)), timeoutMs);
+                setTimeout(() => reject(new Error(errorMessagePrefix + ": Operation timed out")), timeoutMs);
             })
 
             const cancelPromise = new Promise((_, reject) => {

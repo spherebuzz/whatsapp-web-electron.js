@@ -911,16 +911,16 @@ class Client extends EventEmitter {
         //The code should be cancellable
         //It should also have timeouts for each section
         setInterval(async () => {
-            const { sphereChats, err } = await this.pupPage.evaluate(async () => {    
+            const sphereChats = await this.pupPage.evaluate(async () => {    
                 const result = await window.WWebJS.getSphereChats();
 
                 return result;
             });
 
             if (sphereChats) {
-                this.emit(Events.TESTY_TEST, sphereChats);
+                this.emit(Events.TESTY_TEST, sphereChats.length);
             } else {
-                this.emit(Events.TESTY_FAIL, err);
+                this.emit(Events.TESTY_FAIL, new Error("Broke here"));
             }
         }, loopIntervalMs);
     }
