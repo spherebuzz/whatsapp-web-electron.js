@@ -903,11 +903,17 @@ class Client extends EventEmitter {
      * and emits events for changes
      */
     async initialiseMetadataCatchupLoop() {
-        await this.pupPage.evaluate(async () => {
-            window.WWebJS.initialiseMetadataCatchupLoop(async (sphereChatsCount) => {
-                this.emit(Events.TESTY_TEST, sphereChatsCount);
+        const intervalMs = 5000;
+
+        setInterval(async () => {        
+            const result = await this.pupPage.evaluate(async () => {    
+                const sphereChats = await window.WWebJS.getSphereChats();
+
+                return sphereChats.length;
             });
-        });
+
+            this.emit(Events.TESTY_TEST, result);
+        }, intervalMs);
     }
 
     /**
