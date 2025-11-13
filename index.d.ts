@@ -78,6 +78,8 @@ declare namespace WAWebJS {
         /** Logs out the client, closing the current session */
         logout(): Promise<void>
 
+        initialiseMetadataCatchupLoop(): Promise<void>
+
         /** Get all blocked contacts by host account */
         getBlockedContacts(): Promise<Contact[]>
 

@@ -898,6 +898,18 @@ class Client extends EventEmitter {
     }
 
     /**
+     * Starts a regular evaluation of the state of contacts and conversations
+     * and emits events for changes
+     */
+    async initialiseMetadataCatchupLoop() {
+        await this.pupPage.evaluate(async () => {
+            window.WWebJS.initialiseMetadataCatchupLoop(async (sphereChatsCount) => {
+                this.emit(Events.TESTY_TEST, sphereChatsCount);
+            });
+        });
+    }
+
+    /**
      * Mark as seen for the Chat
      *  @param {string} chatId
      *  @returns {Promise<boolean>} result

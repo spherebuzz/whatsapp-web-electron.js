@@ -3,6 +3,18 @@
 exports.LoadUtils = () => {
     window.WWebJS = {};
 
+    window.WWebJS.initialiseMetadataCatchupLoop = async(callback) => {
+        const intervalMs = 5000;
+
+        const intervalId = setInterval(async () => {
+            const sphereChats = await window.WWebJS.getSphereChats();
+
+            await callback(sphereChats.length);
+        }, intervalMs);
+
+        return intervalId;
+    }
+
     window.WWebJS.forwardMessage = async (chatId, msgId) => {
         const msg = window.Store.Msg.get(msgId) || (await window.Store.Msg.getMessagesById([msgId]))?.messages?.[0];
         const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
