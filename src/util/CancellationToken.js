@@ -28,4 +28,4 @@ class CancellationToken {
     }
 }
 
-class CancelledError extends Error {}
+export class CancelledError extends Error {}
