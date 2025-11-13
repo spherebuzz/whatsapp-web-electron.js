@@ -64,6 +64,7 @@ const {exposeFunctionIfAbsent} = require('./util/Puppeteer');
  * @fires Client#group_membership_request
  * @fires Client#vote_update
  * @fires Client#testy_test
+ * @fires Client#testy_fail
  */
 class Client extends EventEmitter {
     constructor(puppeteerBrowser, browserWindow, options = {}) {
@@ -902,18 +903,26 @@ class Client extends EventEmitter {
      * Starts a regular evaluation of the state of contacts and conversations
      * and emits events for changes
      */
-    async initialiseMetadataCatchupLoop() {
-        const intervalMs = 5000;
+    async initialiseMetadataCatchupLoop(
+        loopIntervalMs
+    ) {
+        //Initially, need to get contacts and conversations to store in cache
+        //Then loop and find differences.
+        //The code should be cancellable
+        //It should also have timeouts for each section
+        setInterval(async () => {
+            const { sphereChats, err } = await this.pupPage.evaluate(async () => {    
+                const result = await window.WWebJS.getSphereChats();
 
-        setInterval(async () => {        
-            const result = await this.pupPage.evaluate(async () => {    
-                const sphereChats = await window.WWebJS.getSphereChats();
-
-                return sphereChats.length;
+                return result;
             });
 
-            this.emit(Events.TESTY_TEST, result);
-        }, intervalMs);
+            if (sphereChats) {
+                this.emit(Events.TESTY_TEST, sphereChats);
+            } else {
+                this.emit(Events.TESTY_FAIL, err);
+            }
+        }, loopIntervalMs);
     }
 
     /**

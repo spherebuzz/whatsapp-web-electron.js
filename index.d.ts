@@ -503,6 +503,11 @@ declare namespace WAWebJS {
             /** Blah */
             sphereChatCount: number
         ) => void): this
+
+        on(event: 'testy_fail', listener: (
+            /** Blah */
+            error: Error
+        ) => void): this
     }
 
     /** Current connection information */
@@ -882,7 +887,8 @@ declare namespace WAWebJS {
         BATTERY_CHANGED = 'change_battery',
         REMOTE_SESSION_SAVED = 'remote_session_saved',
         CALL = 'call',
-        TESTY_TEST = 'testy_test'
+        TESTY_TEST = 'testy_test',
+        TESTY_FAIL = 'testy_fail'
     }
 
     /** Group notification types */

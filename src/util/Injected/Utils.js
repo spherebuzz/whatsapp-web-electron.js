@@ -689,11 +689,132 @@ exports.LoadUtils = () => {
         return await Promise.all(chatPromises);
     };
 
-    window.WWebJS.getSphereChats = async () => {
-        const chats = window.Store.Chat.getModelsArray();
-        const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
-        return await Promise.all(chatPromises);
+    window.WWebJS.getSphereChats = async (
+        cancellationToken) => {
+        let timeoutMs = 2000;
+        const errorMessagePrefix = "getSphereChats";
+
+        let index = 0;
+        return await runWithControl(async (cancellationToken) => {
+            if (index++ % 3 == 0) {
+                throw new Error("An error happening here");
+            } else if (index % 5 == 0) {
+                timeoutMs = 5;
+            } else if (index % 7 == 0) {
+                cancellationToken.cancel();
+            } else {
+                timeoutMs = 2000;
+            }
+
+            const chats = window.Store.Chat.getModelsArray();
+            const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+
+            const chatModels = await Promise.all(chatPromises);
+            return { ChatModels: chatModels, Error: undefined };
+        },
+        cancellationToken,
+        timeoutMs,
+        errorMessagePrefix, {
+            onAnyError: (err) => {
+                return { ChatModels: undefined, Error: err };
+            }
+        });
     };
+
+    async function runWithControl(
+        action,
+        cancellationToken,
+        timeoutMs,
+        errorMessagePrefix, {
+        onTimeoutError,
+        onCancelledError,
+        onAnyError
+        } = {}
+    ) {
+        try {
+            const workPromise = (async () => {
+                if (cancellationToken.isCancelled()) {
+                    throw new CancelledError(errorMessagePrefix + ": Operation cancelled before start");
+                }
+
+                const result = await action(cancellationToken);
+
+                if (cancellationToken.isCancelled()) {
+                    throw new CancelledError(errorMessagePrefix + ": Operation cancelled after action");
+                }
+
+                return result;
+            })();
+
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new TimeoutError(errorMessagePrefix)), timeoutMs);
+            })
+
+            const cancelPromise = new Promise((_, reject) => {
+                if (cancellationToken.isCancelled()) {
+                    reject(new CancelledError(errorMessagePrefix + ": Operation cancelled during action(1)"));
+                } else {
+                    cancellationToken.onCancel(() => reject(new CancelledError(errorMessagePrefix + ": Operation cancelled during action(2)")))
+                }
+            });
+
+            return await Promise.race([
+                workPromise,
+                timeoutPromise,
+                cancelPromise
+            ]);
+        } catch (err) {
+            if (err instanceof TimeoutError) {
+                if (onTimeoutError) {
+                    onTimeoutError(err);
+                } else if (onAnyError) {
+                    onAnyError(err);
+                } else {
+                    console.error(err);
+                }
+            } else if (err instanceof CancelledError) {
+                if (onCancelledError) {
+                    onCancelledError(err);
+                } else if (onAnyError) {
+                    onAnyError(err);
+                } else {
+                    console.error(err);
+                }
+            } else {
+                if (onAnyError) {
+                    onAnyError(err);
+                } else {
+                    console.error(err);
+                }
+            }
+        }
+    }
+
+    async function withTimeout(action, timeoutMs, timedOutMessagePrefix) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const result = await Promise.race([
+                    action(),
+                    new Promise((_, reject) => {
+                        setTimeout(() => {
+                            reject(new TimeoutError(timedOutMessagePrefix));
+                        }, timeoutMs);
+                    })
+                ]);
+
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    class TimeoutError extends Error {
+        constructor(message) {
+            super(message ? " Timed out: " + message : " Timed out");
+        }
+    }
+
 
     window.WWebJS.getChannels = async () => {
         const channels = window.Store.NewsletterCollection.getModelsArray();
