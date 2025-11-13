@@ -498,6 +498,11 @@ declare namespace WAWebJS {
         on(event: 'vote_update', listener: (
             vote: PollVote
         ) => void): this
+
+        on(event: 'testy_test', listener: (
+            /** Blah */
+            sphereChatCount: number
+        ) => void): this
     }
 
     /** Current connection information */
@@ -876,7 +881,8 @@ declare namespace WAWebJS {
         STATE_CHANGED = 'change_state',
         BATTERY_CHANGED = 'change_battery',
         REMOTE_SESSION_SAVED = 'remote_session_saved',
-        CALL = 'call'
+        CALL = 'call',
+        TESTY_TEST = 'testy_test'
     }
 
     /** Group notification types */

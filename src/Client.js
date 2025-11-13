@@ -63,6 +63,7 @@ const {exposeFunctionIfAbsent} = require('./util/Puppeteer');
  * @fires Client#group_admin_changed
  * @fires Client#group_membership_request
  * @fires Client#vote_update
+ * @fires Client#testy_test
  */
 class Client extends EventEmitter {
     constructor(puppeteerBrowser, browserWindow, options = {}) {
