@@ -906,24 +906,24 @@ class Client extends EventEmitter {
     async initialiseMetadataCatchupLoop(
     ) {
         const loopIntervalMs = 5000;
+        const getTimeoutMs = 2000;
         //Initially, need to get contacts and conversations to store in cache
         //Then loop and find differences.
         //The code should be cancellable
         //It should also have timeouts for each section
         setInterval(async () => {
-            const sphereChats = await this.pupPage.evaluate(async () => {    
-                const result = await window.WWebJS.getSphereChats2();
+            const sphereChats = await this.pupPage.evaluate(async (timeoutMs) => {    
+                const result = await window.WWebJS.getSphereChats2(timeoutMs);
 
                 return result;
-            });
-
-            const result = sphereChats.Result.map(chat => ChatFactory.create(this, chat));
+            }, getTimeoutMs);
 
             if (sphereChats.Result) {
-                this.emit(Events.TESTY_FAIL, "Blah");
+                const result = sphereChats.Result.map(chat => ChatFactory.create(this, chat));
+                this.emit(Events.TESTY_FAIL, sphereChats.Error + "1");
                 this.emit(Events.TESTY_TEST, result);
             } else {
-                this.emit(Events.TESTY_FAIL, "Broke here");
+                this.emit(Events.TESTY_FAIL, sphereChats.Error + "2");
             }
         }, loopIntervalMs);
     }

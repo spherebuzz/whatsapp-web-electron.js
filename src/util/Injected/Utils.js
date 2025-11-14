@@ -695,12 +695,24 @@ exports.LoadUtils = () => {
         return await Promise.all(chatPromises);
     };
 
-    window.WWebJS.getSphereChats2 = async () => {
-        const chats = window.Store.Chat.getModelsArray();
-        const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
-        const result = await Promise.all(chatPromises);
+    window.WWebJS.getSphereChats2 = async (timeoutMs) => {
+        try {
+            const result = await withTimeout(async () => {
+                const chats = window.Store.Chat.getModelsArray();
+                const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+                const result = await Promise.all(chatPromises);
 
-        return { Result: result, Error: "This is an error message" };
+                return { Result: result, Error: "No error" };
+            }, timeoutMs);
+
+            return result;
+        } catch (err) {
+            if (err instanceof TimeoutError) {
+                return { Result: undefined, Error: "Timeout error" }
+            } else {
+                return { Result: undefined, Error: "another error" }
+            }
+        }
     };
 
     // window.WWebJS.getSphereChats = async (
@@ -780,6 +792,32 @@ exports.LoadUtils = () => {
             }
         }
     }
+
+    async function withTimeout(action, timeoutMs) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const result = await Promise.race([
+                    action(),
+                    new Promise((_, reject) => {
+                        setTimeout(() => {
+                            reject(new TimeoutError());
+                        }, timeoutMs);
+                    })
+                ]);
+
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    class TimeoutError extends Error {
+        constructor(message) {
+            super(message ? "Timed out: " + message : "Timed out");
+        }
+    }
+
 
     window.WWebJS.getChannels = async () => {
         const channels = window.Store.NewsletterCollection.getModelsArray();
