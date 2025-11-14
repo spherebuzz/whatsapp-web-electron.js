@@ -912,15 +912,16 @@ class Client extends EventEmitter {
         //It should also have timeouts for each section
         setInterval(async () => {
             const sphereChats = await this.pupPage.evaluate(async () => {    
-                const result = await window.WWebJS.getSphereChats();
+                const result = await window.WWebJS.getSphereChats2();
 
                 return result;
             });
 
-            if (sphereChats) {
-                this.emit(Events.TESTY_TEST, sphereChats.length);
+            if (sphereChats.Result) {
+                this.emit(Events.TESTY_TEST, sphereChats.Result.length);
+                this.emit(Events.TESTY_FAIL, sphereChats.Error);
             } else {
-                this.emit(Events.TESTY_FAIL, new Error("Broke here"));
+                this.emit(Events.TESTY_FAIL, "Broke here");
             }
         }, loopIntervalMs);
     }

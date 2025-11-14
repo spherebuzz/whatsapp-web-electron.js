@@ -689,35 +689,49 @@ exports.LoadUtils = () => {
         return await Promise.all(chatPromises);
     };
 
-    window.WWebJS.getSphereChats = async (
-        cancellationToken = new CancellationToken()) => {
-        let timeoutMs = 2000;
-        const errorMessagePrefix = "getSphereChats";
-
-        //let index = 0;
-        return await runWithControl(async (cancellationToken) => {
-            // if (index++ % 3 == 0) {
-            //     throw new Error("An error happening here");
-            // } else if (index % 5 == 0) {
-            //     timeoutMs = 5;
-            // } else if (index % 7 == 0) {
-            //     cancellationToken.cancel();
-            // } else {
-            //     timeoutMs = 2000;
-            // }
-
-            const chats = window.Store.Chat.getModelsArray();
-            const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
-
-            return await Promise.all(chatPromises);
-        },
-        cancellationToken,
-        timeoutMs,
-        errorMessagePrefix);
-        // (err) => {
-        //     return { ChatModels: undefined, Error: err };
-        // });
+    window.WWebJS.getSphereChats = async () => {
+        const chats = window.Store.Chat.getModelsArray();
+        const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+        return await Promise.all(chatPromises);
     };
+
+    window.WWebJS.getSphereChats2 = async () => {
+        const chats = window.Store.Chat.getModelsArray();
+        const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+        const result = await Promise.all(chatPromises);
+
+        return { Result: result, Error: "This is an error message" };
+    };
+
+    // window.WWebJS.getSphereChats = async (
+    //     cancellationToken = new CancellationToken()) => {
+    //     let timeoutMs = 2000;
+    //     const errorMessagePrefix = "getSphereChats";
+
+    //     //let index = 0;
+    //     return await runWithControl(async (cancellationToken) => {
+    //         // if (index++ % 3 == 0) {
+    //         //     throw new Error("An error happening here");
+    //         // } else if (index % 5 == 0) {
+    //         //     timeoutMs = 5;
+    //         // } else if (index % 7 == 0) {
+    //         //     cancellationToken.cancel();
+    //         // } else {
+    //         //     timeoutMs = 2000;
+    //         // }
+
+    //         const chats = window.Store.Chat.getModelsArray();
+    //         const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+
+    //         return await Promise.all(chatPromises);
+    //     },
+    //     cancellationToken,
+    //     timeoutMs,
+    //     errorMessagePrefix);
+    //     // (err) => {
+    //     //     return { ChatModels: undefined, Error: err };
+    //     // });
+    // };
 
     async function runWithControl(
         action,
