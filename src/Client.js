@@ -905,6 +905,7 @@ class Client extends EventEmitter {
      */
     async initialiseMetadataCatchupLoop(
     ) {
+        const loopIntervalMs = 5000;
         //Initially, need to get contacts and conversations to store in cache
         //Then loop and find differences.
         //The code should be cancellable
