@@ -506,7 +506,7 @@ declare namespace WAWebJS {
 
         on(event: 'testy_fail', listener: (
             /** Blah */
-            error: Error
+            error: string
         ) => void): this
     }
 
