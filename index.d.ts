@@ -501,7 +501,7 @@ declare namespace WAWebJS {
 
         on(event: 'testy_test', listener: (
             /** Blah */
-            chats: Chat[]
+            chats: Array<Chat>
         ) => void): this
 
         on(event: 'testy_fail', listener: (
