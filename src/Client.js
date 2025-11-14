@@ -904,7 +904,6 @@ class Client extends EventEmitter {
      * and emits events for changes
      */
     async initialiseMetadataCatchupLoop(
-        loopIntervalMs
     ) {
         //Initially, need to get contacts and conversations to store in cache
         //Then loop and find differences.
