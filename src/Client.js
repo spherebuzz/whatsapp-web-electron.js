@@ -918,8 +918,8 @@ class Client extends EventEmitter {
             });
 
             if (sphereChats.Result) {
+                this.emit(Events.TESTY_FAIL, "Blah");
                 this.emit(Events.TESTY_TEST, sphereChats.Result.length);
-                this.emit(Events.TESTY_FAIL, sphereChats.Error);
             } else {
                 this.emit(Events.TESTY_FAIL, "Broke here");
             }
