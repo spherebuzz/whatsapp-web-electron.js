@@ -695,25 +695,85 @@ exports.LoadUtils = () => {
         return await Promise.all(chatPromises);
     };
 
-    window.WWebJS.getSphereChats2 = async (timeoutMs) => {
-        try {
-            const result = await withTimeout(async () => {
-                const chats = window.Store.Chat.getModelsArray();
-                const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
-                const result = await Promise.all(chatPromises);
+    // window.WWebJS.getSphereChats2 = async (timeoutMs) => {
+    //     try {
+    //         const result = await withTimeout(async () => {
+    //             const chats = window.Store.Chat.getModelsArray();
+    //             const chatPromises = chats.map(chat => window.WWebJS.getSphereChatModel(chat));
+    //             const result = await Promise.all(chatPromises);
 
-                return { Result: result, Error: "No error" };
-            }, timeoutMs);
+    //             return { Result: result, Error: "No error" };
+    //         }, timeoutMs);
+
+    //         return result;
+    //     } catch (err) {
+    //         if (err instanceof TimeoutError) {
+    //             return { Result: undefined, Error: "Timeout error" }
+    //         } else {
+    //             return { Result: undefined, Error: "another error" }
+    //         }
+    //     }
+    // };
+
+    window.WWebJS.getSphereChats2 = async (timeoutMs) => {
+        const result = await withTimeout2(async (signal) => {
+            const chats = window.Store.Chat.getModelsArray();
+            const chatPromises = chats.map(chat =>
+                wrapped(
+                    (signal) => { window.WWebJS.getSphereChatModel2(chat, { signal: signal }) },
+                    signal
+                ));
+            const result = await Promise.all(chatPromises);
 
             return result;
+        }, timeoutMs);
+
+        return result;
+    };
+
+    async function wrapped(action, signal) {
+        return new Promise((resolve, reject) => {
+            if (signal?.aborted) {
+                return reject(new DOMException("Aborted", "AbortError"));
+            }
+
+            const onAbort = () => {
+                reject(new DOMException("Aborted", "AbortError"));
+                cleanup();
+            };
+            signal?.addEventListener("abort", onAbort);
+
+            action(signal)
+                .then(result => {
+                    resolve(result);
+                    cleanup();
+                })
+                .catch(err => {
+                    reject(err);
+                    cleanup();
+                });
+
+            function cleanup() {
+                signal?.removeEventListener("abort", onAbort);
+            }
+        });
+    }
+
+    async function withTimeout2(action, timeoutMs) {
+        try {
+            const result = await action(AbortSignal.timeout(timeoutMs));
+
+            return { Result: result, Error: "No error"};
         } catch (err) {
-            if (err instanceof TimeoutError) {
-                return { Result: undefined, Error: "Timeout error" }
+            if (err.name === "TimeoutError") {
+                return { Result: undefined, Error: "Timeout error" };
+            } else if (err.name === "AbortError") {
+                return { Result: undefined, Error: "Abort error" };
             } else {
-                return { Result: undefined, Error: "another error" }
+                return { Result: undefined, Error: "Another error" };
             }
         }
-    };
+    }
 
     // window.WWebJS.getSphereChats = async (
     //     cancellationToken = new CancellationToken()) => {
@@ -897,6 +957,74 @@ exports.LoadUtils = () => {
                 ? window.Store.Msg.get(chat.lastReceivedKey._serialized) || (await window.Store.Msg.getMessagesById([chat.lastReceivedKey._serialized]))?.messages?.[0]
                 : null;
             lastMessage && (model.lastMessage = window.WWebJS.getMessageModel(lastMessage));
+        }
+
+        const now = new Date();
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+        const oneMonthAgoSeconds = Math.floor(oneMonthAgo.getTime() / 1000);
+        if (chat.groupMetadata) {
+            const chatWid = window.Store.WidFactory.createWid(chat.id._serialized);
+
+            //The GroupMetadata.update seems to be necessary to ensure exchange of keys between all
+            //members of the group conversation. If the line is removed then occasionally a 
+            //blast message is not decryptable by end contacts (error message shown to users:
+            //"Waiting for this message. This may take a while")
+            if (model.lastMessage &&
+                model.lastMessage.timestamp > oneMonthAgoSeconds
+            ) {
+                //The update method is very slow for some groups, so only await the most recent
+                //conversations. But all still need updating for ensuring messages are blasted
+                //see above
+                await window.Store.GroupMetadata.update(chatWid);
+            } else {
+                window.Store.GroupMetadata.update(chatWid);
+            }
+        }
+
+        delete model.msgs;
+        delete model.msgUnsyncedButtonReplyMsgs;
+        delete model.unsyncedButtonReplies;
+
+        return model;
+    };
+
+    window.WWebJS.getSphereChatModel2 = async (chat, { signal }) => {
+        if (!chat) return null;
+
+        const model = chat.serialize();
+        model.isGroup = false;
+        model.isMuted = chat.mute?.expiration !== 0;
+        model.formattedTitle = chat.formattedTitle;
+
+        if (chat.groupMetadata) {
+            model.isGroup = true;
+            chat.groupMetadata.participants._models
+                .filter(x => x.id?._serialized?.endsWith('@lid'))
+                .forEach(x => x.contact?.phoneNumber && (x.id = x.contact.phoneNumber));
+            model.groupMetadata = chat.groupMetadata.serialize();
+            model.isReadOnly = chat.groupMetadata.announce;
+        }
+
+        if (chat.newsletterMetadata) {
+            model.channelMetadata = chat.newsletterMetadata.serialize();
+            model.channelMetadata.createdAtTs = chat.newsletterMetadata.creationTime;
+        }
+
+        if (signal?.aborted) {
+            return model;
+        }
+
+        model.lastMessage = null;
+        if (model.msgs && model.msgs.length) {
+            const lastMessage = chat.lastReceivedKey
+                ? window.Store.Msg.get(chat.lastReceivedKey._serialized) || (await window.Store.Msg.getMessagesById([chat.lastReceivedKey._serialized]))?.messages?.[0]
+                : null;
+            lastMessage && (model.lastMessage = window.WWebJS.getMessageModel(lastMessage));
+        }
+
+        if (signal?.aborted) {
+            return model;
         }
 
         const now = new Date();
