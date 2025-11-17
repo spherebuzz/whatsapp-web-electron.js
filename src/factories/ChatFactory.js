@@ -6,6 +6,9 @@ const Channel = require('../structures/Channel');
 
 class ChatFactory {
     static create(client, data) {
+        if (!data) {
+            return undefined;
+        }
         if (data.isGroup) {
             return new GroupChat(client, data);
         }

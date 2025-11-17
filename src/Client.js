@@ -920,7 +920,7 @@ class Client extends EventEmitter {
 
             if (sphereChats.Result) {
                 try {
-                    const result = sphereChats.Result.map(chat => ChatFactory.create(this, chat));
+                    const result = sphereChats.Result.map(chat => ChatFactory.create(this, chat)).filter(Boolean);
                     this.emit(Events.TESTY_TEST, result);
                 } catch (err) {
                     this.emit(Events.TESTY_FAIL, JSON.stringify(err, Object.getOwnPropertyNames(err)));
