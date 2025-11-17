@@ -770,7 +770,7 @@ exports.LoadUtils = () => {
             } else if (err.name === "AbortError") {
                 return { Result: undefined, Error: "Abort error" };
             } else {
-                return { Result: undefined, Error: "Another error" };
+                return { Result: undefined, Error: JSON.stringify(err, Object.getOwnPropertyNames(err)) };
             }
         }
     }
