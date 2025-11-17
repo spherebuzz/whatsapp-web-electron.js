@@ -919,9 +919,12 @@ class Client extends EventEmitter {
             }, getTimeoutMs);
 
             if (sphereChats.Result) {
-                const result = sphereChats.Result.map(chat => ChatFactory.create(this, chat));
-                this.emit(Events.TESTY_FAIL, sphereChats.Error + "1");
-                this.emit(Events.TESTY_TEST, result);
+                try {
+                    const result = sphereChats.Result.map(chat => ChatFactory.create(this, chat));
+                    this.emit(Events.TESTY_TEST, result);
+                } catch (err) {
+                    this.emit(Events.TESTY_FAIL, JSON.stringify(err, Object.getOwnPropertyNames(err)));
+                }
             } else {
                 this.emit(Events.TESTY_FAIL, sphereChats.Error + "2");
             }
