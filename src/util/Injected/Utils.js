@@ -818,6 +818,8 @@ exports.LoadUtils = () => {
 
         if (signal?.aborted) throw abortError();
 
+        findPrimes(200000);
+
         const now = new Date();
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(now.getMonth() - 1);
@@ -848,6 +850,22 @@ exports.LoadUtils = () => {
 
         return model;
     };
+
+    function findPrimes(limit) {
+  const primes = [];
+  for (let n = 2; n < limit; n++) {
+    let isPrime = true;
+    for (let i = 2; i * i <= n; i++) {
+      if (n % i === 0) {
+        isPrime = false;
+        break;
+      }
+    }
+    if (isPrime) primes.push(n);
+  }
+  return primes;
+}
+
 
     // window.WWebJS.getSphereChats = async (
     //     cancellationToken = new CancellationToken()) => {
