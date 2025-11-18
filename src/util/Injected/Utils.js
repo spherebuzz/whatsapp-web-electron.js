@@ -722,7 +722,7 @@ exports.LoadUtils = () => {
                 // runWithCancel(
                 //     (signal) => { window.WWebJS.getSphereChatModel2(chat, { signal: signal }) },
                 //     signal
-                window.WWebJS.getSphereChatModel(chat));
+                window.WWebJS.getSphereChatModel2(chat, { signal: signal }));
             const result = await Promise.all(chatPromises);
 
             return result;
