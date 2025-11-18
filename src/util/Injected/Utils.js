@@ -816,9 +816,9 @@ exports.LoadUtils = () => {
             lastMessage && (model.lastMessage = window.WWebJS.getMessageModel(lastMessage));
         }
 
-        if (signal?.aborted) throw abortError();
-
         findPrimes(200000);
+
+        if (signal?.aborted) throw abortError();
 
         const now = new Date();
         const oneMonthAgo = new Date();
