@@ -719,10 +719,11 @@ exports.LoadUtils = () => {
         const result = await withTimeout2(async (signal) => {
             const chats = window.Store.Chat.getModelsArray();
             const chatPromises = chats.map(chat =>
-                runWithCancel((signal) => {
-                    window.WWebJS.getSphereChatModel2(chat, { signal: signal })
-                    }, signal)
-                );
+                runWithCancel(
+                    (signal) => window.WWebJS.getSphereChatModel2(chat, { signal: signal }),
+                    signal
+                )
+            );
             const result = await Promise.all(chatPromises);
 
             return result;
