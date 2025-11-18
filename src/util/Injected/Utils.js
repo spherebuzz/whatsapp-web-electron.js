@@ -786,6 +786,9 @@ exports.LoadUtils = () => {
 
         if (signal?.aborted) throw abortError();
 
+        // Simulate long-running work
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         const model = chat.serialize();
         model.isGroup = false;
         model.isMuted = chat.mute?.expiration !== 0;
