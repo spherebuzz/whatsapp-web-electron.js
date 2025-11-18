@@ -719,10 +719,10 @@ exports.LoadUtils = () => {
         const result = await withTimeout2(async (signal) => {
             const chats = window.Store.Chat.getModelsArray();
             const chatPromises = chats.map(chat =>
-                // runWithCancel(
-                //     (signal) => { window.WWebJS.getSphereChatModel2(chat, { signal: signal }) },
-                //     signal
-                window.WWebJS.getSphereChatModel2(chat, { signal: signal }));
+                runWithCancel(async (signal) => {
+                    window.WWebJS.getSphereChatModel2(chat, { signal: signal })
+                    }, signal)
+                );
             const result = await Promise.all(chatPromises);
 
             return result;
@@ -743,7 +743,7 @@ exports.LoadUtils = () => {
             };
             signal?.addEventListener("abort", onAbort);
 
-            return Promise.resolve(fn(signal))
+            Promise.resolve(fn(signal))
                 .then(result => {
                     resolve(result);
                     cleanup();
@@ -786,9 +786,6 @@ exports.LoadUtils = () => {
 
         if (signal?.aborted) throw abortError();
 
-        // Simulate long-running work
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
         const model = chat.serialize();
         model.isGroup = false;
         model.isMuted = chat.mute?.expiration !== 0;
@@ -827,6 +824,7 @@ exports.LoadUtils = () => {
         if (chat.groupMetadata) {
             const chatWid = window.Store.WidFactory.createWid(chat.id._serialized);
 
+            //The following may not be true - it may be coincidental with issues in WA
             //The GroupMetadata.update seems to be necessary to ensure exchange of keys between all
             //members of the group conversation. If the line is removed then occasionally a 
             //blast message is not decryptable by end contacts (error message shown to users:
