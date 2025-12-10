@@ -208,44 +208,67 @@ class Client extends EventEmitter {
                  */
             this.emit(Events.AUTHENTICATED, authEventPayload);
 
-            const injected = await this.pupPage.evaluate(async () => {
-                return typeof window.Store !== 'undefined' && typeof window.WWebJS !== 'undefined';
-            });
+            try {
+                const injected = await this.pupPage.evaluate(async () => {
+                    return typeof window.Store !== 'undefined' && typeof window.WWebJS !== 'undefined';
+                });
 
-            if (!injected) {
-                if (this.options.webVersionCache.type === 'local' && this.currentIndexHtml) {
-                    const { type: webCacheType, ...webCacheOptions } = this.options.webVersionCache;
-                    const webCache = WebCacheFactory.createWebCache(webCacheType, webCacheOptions);
-            
-                    await webCache.persist(this.currentIndexHtml, version);
+                if (!injected) {
+                    if (this.options.webVersionCache.type === 'local' && this.currentIndexHtml) {
+                        const { type: webCacheType, ...webCacheOptions } = this.options.webVersionCache;
+                        const webCache = WebCacheFactory.createWebCache(webCacheType, webCacheOptions);
+                
+                        await webCache.persist(this.currentIndexHtml, version);
+                    }
+
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Store or WWebJs is undefined, so initialising');
+
+                    if (isCometOrAbove) {
+                        await this.pupPage.evaluate(ExposeStore);
+                    } else {
+                        // make sure all modules are ready before injection
+                        // 2 second delay after authentication makes sense and does not need to be made dyanmic or removed
+                        await new Promise(r => setTimeout(r, 2000)); 
+                        await this.pupPage.evaluate(ExposeLegacyStore);
+                    }
+
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Store Exposed started, waiting for completion');
+
+                    // Check window.Store Injection
+                    await this.pupPage.waitForFunction('window.Store != undefined');
+                
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Store Exposed completed, window.Store defined');
+
+                    /**
+                         * Current connection information
+                         * @type {ClientInfo}
+                         */
+                    this.info = new ClientInfo(this, await this.pupPage.evaluate(() => {
+                        return { ...window.Store.Conn.serialize(), wid: window.Store.User.getMaybeMePnUser() || window.Store.User.getMaybeMeLidUser() };
+                    }));
+
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Got user info');
+
+                    this.interface = new InterfaceController(this);
+
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: InterfaceController constructed');
+
+                    //Load util functions (serializers, helper functions)
+                    await this.pupPage.evaluate(LoadUtils);
+
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Utils loaded');
+
+                    await this.attachEventListeners();
+
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: event listeners attached, next is ready state');
                 }
-
-                if (isCometOrAbove) {
-                    await this.pupPage.evaluate(ExposeStore);
+            }
+            catch (err) {
+                if (err.message) {
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Error whilst processing: ' + err.message);
                 } else {
-                    // make sure all modules are ready before injection
-                    // 2 second delay after authentication makes sense and does not need to be made dyanmic or removed
-                    await new Promise(r => setTimeout(r, 2000)); 
-                    await this.pupPage.evaluate(ExposeLegacyStore);
+                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Error whilst processing. See logs for how far the code got');
                 }
-
-                // Check window.Store Injection
-                await this.pupPage.waitForFunction('window.Store != undefined');
-            
-                /**
-                     * Current connection information
-                     * @type {ClientInfo}
-                     */
-                this.info = new ClientInfo(this, await this.pupPage.evaluate(() => {
-                    return { ...window.Store.Conn.serialize(), wid: window.Store.User.getMaybeMePnUser() || window.Store.User.getMaybeMeLidUser() };
-                }));
-
-                this.interface = new InterfaceController(this);
-
-                //Load util functions (serializers, helper functions)
-                await this.pupPage.evaluate(LoadUtils);
-
-                await this.attachEventListeners();
             }
             /**
                  * Emitted when the client has initialized and is ready to receive messages.

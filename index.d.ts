@@ -518,6 +518,11 @@ declare namespace WAWebJS {
         on(event: 'vote_update', listener: (
             vote: PollVote
         ) => void): this
+
+        /** Emitted when the logging info should be sent to Sphere */
+        on(event: 'sphere_log', listener: (
+            message: string
+        ) => void): this
     }
 
     /** Current connection information */
