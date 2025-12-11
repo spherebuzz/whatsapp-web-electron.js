@@ -269,6 +269,7 @@ class Client extends EventEmitter {
                 } else {
                     this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Error whilst processing. See logs for how far the code got');
                 }
+                throw err;
             }
             /**
                  * Emitted when the client has initialized and is ready to receive messages.
