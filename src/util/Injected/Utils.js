@@ -836,8 +836,8 @@ exports.LoadUtils = () => {
         if (contact.id._serialized.endsWith('@lid')) {
             contact.id = contact.phoneNumber;
         }
-        const bizProfile = await window.Store.BusinessProfile.fetchBizProfile(wid);
-        bizProfile.profileOptions && (contact.businessProfile = bizProfile);
+        // const bizProfile = await window.Store.BusinessProfile.fetchBizProfile(wid);
+        // bizProfile.profileOptions && (contact.businessProfile = bizProfile);
         return window.WWebJS.getContactModel(contact);
     };
 
