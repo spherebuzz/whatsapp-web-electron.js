@@ -221,9 +221,21 @@ class Client extends EventEmitter {
                         await webCache.persist(this.currentIndexHtml, version);
                     }
 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Store or WWebJs is undefined, so initialising');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Store or WWebJs is undefined, so initialising");
 
                     if (isCometOrAbove) {
+                        // make sure the pushname module is ready before injection
+                        await this.pupPage.evaluate(async () => {
+                            const WWebSetPushnameConnAction = await window.require('WAWebSetPushnameConnAction');
+
+                            if (!WWebSetPushnameConnAction) {
+                                console.warn("onAppStateHasSyncedEvent: WAWebSetPushnameConnAction not found. WAWebProfileDrawerLoadableRequireBundle will be called to try loading it.");
+
+                                await window.require("WAWebProfileDrawerLoadableRequireBundle").requireBundle();
+                                return;
+                            }
+                        });
+
                         await this.pupPage.evaluate(ExposeStore);
                     } else {
                         // make sure all modules are ready before injection
@@ -232,12 +244,12 @@ class Client extends EventEmitter {
                         await this.pupPage.evaluate(ExposeLegacyStore);
                     }
 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Store Exposed started, waiting for completion');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Store Exposed started, waiting for completion");
 
                     // Check window.Store Injection
                     await this.pupPage.waitForFunction('window.Store != undefined');
                 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Store Exposed completed, window.Store defined');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Store Exposed completed, window.Store defined");
 
                     /**
                          * Current connection information
@@ -247,27 +259,27 @@ class Client extends EventEmitter {
                         return { ...window.Store.Conn.serialize(), wid: window.Store.User.getMaybeMePnUser() || window.Store.User.getMaybeMeLidUser() };
                     }));
 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Got user info');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Got user info");
 
                     this.interface = new InterfaceController(this);
 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: InterfaceController constructed');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: InterfaceController constructed");
 
                     //Load util functions (serializers, helper functions)
                     await this.pupPage.evaluate(LoadUtils);
 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Utils loaded');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Utils loaded");
 
                     await this.attachEventListeners();
 
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: event listeners attached, next is ready state');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: event listeners attached, next is ready state");
                 }
             }
             catch (err) {
                 if (err.message) {
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Error whilst processing: ' + err.message);
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Error whilst processing: " + err.message);
                 } else {
-                    this.emit(Events.SPHERE_LOG, 'onAppStateHasSyncedEvent: Error whilst processing. See logs for how far the code got');
+                    this.emit(Events.SPHERE_LOG, "onAppStateHasSyncedEvent: Error whilst processing. See logs for how far the code got");
                 }
                 throw err;
             }
