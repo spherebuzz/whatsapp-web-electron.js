@@ -524,6 +524,8 @@ class Message extends Base {
             if (error.message && error.message.includes('timed out')) {
                 throw error;
             }
+            // Re-throw other errors
+            throw error;
         } finally {
             // Clear the timeout if it was set
             if (timeoutId) {
