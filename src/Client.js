@@ -66,7 +66,7 @@ const {exposeFunctionIfAbsent} = require('./util/Puppeteer');
  * @fires Client#vote_update
  */
 class Client extends EventEmitter {
-    constructor(options = {}) {
+    constructor(puppeteerBrowser, browserWindow, options = {}) {
         super();
 
         this.options = Util.mergeDefault(DefaultOptions, options);
@@ -82,7 +82,8 @@ class Client extends EventEmitter {
         /**
          * @type {puppeteer.Browser}
          */
-        this.pupBrowser = null;
+        this.pupBrowser = puppeteerBrowser;
+        this.browserWindow = browserWindow;
         /**
          * @type {puppeteer.Page}
          */
@@ -355,21 +356,24 @@ class Client extends EventEmitter {
 
         await this.authStrategy.beforeBrowserInitialized();
 
-        const puppeteerOpts = this.options.puppeteer;
-        if (puppeteerOpts && (puppeteerOpts.browserWSEndpoint || puppeteerOpts.browserURL)) {
-            browser = await puppeteer.connect(puppeteerOpts);
-            page = await browser.newPage();
-        } else {
-            const browserArgs = [...(puppeteerOpts.args || [])];
-            if(this.options.userAgent !== false && !browserArgs.find(arg => arg.includes('--user-agent'))) {
-                browserArgs.push(`--user-agent=${this.options.userAgent}`);
-            }
-            // navigator.webdriver fix
-            browserArgs.push('--disable-blink-features=AutomationControlled');
+        page = await pie.getPage(this.pupBrowser, this.browserWindow);
+        page.setUserAgent(this.options.userAgent);
 
-            browser = await puppeteer.launch({...puppeteerOpts, args: browserArgs});
-            page = (await browser.pages())[0];
-        }
+        // const puppeteerOpts = this.options.puppeteer;
+        // if (puppeteerOpts && (puppeteerOpts.browserWSEndpoint || puppeteerOpts.browserURL)) {
+        //     browser = await puppeteer.connect(puppeteerOpts);
+        //     page = await browser.newPage();
+        // } else {
+        //     const browserArgs = [...(puppeteerOpts.args || [])];
+        //     if(this.options.userAgent !== false && !browserArgs.find(arg => arg.includes('--user-agent'))) {
+        //         browserArgs.push(`--user-agent=${this.options.userAgent}`);
+        //     }
+        //     // navigator.webdriver fix
+        //     browserArgs.push('--disable-blink-features=AutomationControlled');
+
+        //     browser = await puppeteer.launch({...puppeteerOpts, args: browserArgs});
+        //     page = (await browser.pages())[0];
+        // }
 
         if (this.options.proxyAuthentication !== undefined) {
             await page.authenticate(this.options.proxyAuthentication);
@@ -379,7 +383,6 @@ class Client extends EventEmitter {
         }
         if (this.options.bypassCSP) await page.setBypassCSP(true);
 
-        this.pupBrowser = browser;
         this.pupPage = page;
 
         await this.authStrategy.afterBrowserInitialized();
