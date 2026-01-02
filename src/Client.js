@@ -395,6 +395,7 @@ class Client extends EventEmitter {
         }
         if(this.options.userAgent !== false) {
             await page.setUserAgent(this.options.userAgent);
+            this.emit(Events.SPHERE_LOG, `initialize: user agent: ${this.options.userAgent}`);
         }
         if (this.options.bypassCSP) await page.setBypassCSP(true);
 
