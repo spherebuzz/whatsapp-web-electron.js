@@ -111,18 +111,23 @@ class Client extends EventEmitter {
             await new Promise(r => setTimeout(r, 200));
         }
         if(!res){ 
+            this.emit(Events.SPHERE_LOG, "inject: VERSION not found - timed out");
             throw 'auth timeout';
-        }       
+        }
+        this.emit(Events.SPHERE_LOG, "inject: VERSION found");
+
         await this.setDeviceName(this.options.deviceName, this.options.browserName);
         const pairWithPhoneNumber = this.options.pairWithPhoneNumber;
         const version = await this.getWWebVersion();
         const isCometOrAbove = parseInt(version.split('.')?.[1]) >= 3000;
+        this.emit(Events.SPHERE_LOG, "inject: device name set");
 
         if (isCometOrAbove) {
             await this.pupPage.evaluate(ExposeAuthStore);
         } else {
             await this.pupPage.evaluate(ExposeLegacyAuthStore, moduleRaid.toString());
         }
+        this.emit(Events.SPHERE_LOG, "inject: Auth store exposed");
 
         const needAuthentication = await this.pupPage.evaluate(async () => {
             let state = window.AuthStore.AppState.state;
@@ -141,9 +146,12 @@ class Client extends EventEmitter {
             state = window.AuthStore.AppState.state;
             return state == 'UNPAIRED' || state == 'UNPAIRED_IDLE';
         });
+        this.emit(Events.SPHERE_LOG, "inject: need authentication evaluated");
 
         if (needAuthentication) {
+            this.emit(Events.SPHERE_LOG, "inject: on authentication needed complete");
             const { failed, failureEventPayload, restart } = await this.authStrategy.onAuthenticationNeeded();
+            this.emit(Events.SPHERE_LOG, "inject: on authentication needed complete");
 
             if(failed) {
                 /**
@@ -162,6 +170,7 @@ class Client extends EventEmitter {
 
             // Register qr/code events
             if (pairWithPhoneNumber.phoneNumber) {
+               this.emit(Events.SPHERE_LOG, "inject: request pairing code");
                 await exposeFunctionIfAbsent(this.pupPage, 'onCodeReceivedEvent', async (code) => {
                     /**
                     * Emitted when a pairing code is received
@@ -175,6 +184,7 @@ class Client extends EventEmitter {
                 this.requestPairingCode(pairWithPhoneNumber.phoneNumber, pairWithPhoneNumber.showNotification, pairWithPhoneNumber.intervalMs);
             } else {
                 let qrRetries = 0;
+               this.emit(Events.SPHERE_LOG, "inject: show qr code");
                 await exposeFunctionIfAbsent(this.pupPage, 'onQRChangedEvent', async (qr) => {
                     /**
                     * Emitted when a QR code is received
@@ -190,7 +200,7 @@ class Client extends EventEmitter {
                         }
                     }
                 });
-
+                this.emit(Events.SPHERE_LOG, "inject: qr code found");
 
                 await this.pupPage.evaluate(async () => {
                     const registrationInfo = await window.AuthStore.RegistrationUtils.waSignalStore.getRegistrationInfo();
@@ -204,6 +214,7 @@ class Client extends EventEmitter {
                     window.onQRChangedEvent(getQR(window.AuthStore.Conn.ref)); // initial qr
                     window.AuthStore.Conn.on('change:ref', (_, ref) => { window.onQRChangedEvent(getQR(ref)); }); // future QR changes
                 });
+                this.emit(Events.SPHERE_LOG, "inject: qr code evaluated");
             }
         }
 
@@ -334,6 +345,7 @@ class Client extends EventEmitter {
                 await window.onLogoutEvent();
             });
         });
+        this.emit(Events.SPHERE_LOG, "inject: completed");
     }
 
     /**
@@ -356,8 +368,11 @@ class Client extends EventEmitter {
 
         await this.authStrategy.beforeBrowserInitialized();
 
+        this.emit(Events.SPHERE_LOG, "initialize: beforeBrowserInitialized completed");
+
         page = await pie.getPage(this.pupBrowser, this.browserWindow);
-        page.setUserAgent(this.options.userAgent);
+
+        this.emit(Events.SPHERE_LOG, "initialize: pie Page got");
 
         // const puppeteerOpts = this.options.puppeteer;
         // if (puppeteerOpts && (puppeteerOpts.browserWSEndpoint || puppeteerOpts.browserURL)) {
@@ -383,14 +398,19 @@ class Client extends EventEmitter {
         }
         if (this.options.bypassCSP) await page.setBypassCSP(true);
 
+        this.emit(Events.SPHERE_LOG, "initialize: authenticated, user agent set and bypassed CSP");
+
         this.pupPage = page;
 
         await this.authStrategy.afterBrowserInitialized();
+        this.emit(Events.SPHERE_LOG, "initialize: after Browser initialized");
         await this.initWebVersionCache();
+        this.emit(Events.SPHERE_LOG, "initialize: web version cach inited");
         
         if (this.options.evalOnNewDoc !== undefined) {
             await page.evaluateOnNewDocument(this.options.evalOnNewDoc);
         }
+        this.emit(Events.SPHERE_LOG, "initialize: evaluate on new doc");
         
         // ocVersion (isOfficialClient patch)
         // remove after 2.3000.x hard release
@@ -405,14 +425,17 @@ class Client extends EventEmitter {
                 return error;
             };
         });
+        this.emit(Events.SPHERE_LOG, "initialize: evaluate on new doc 2");
         
         await page.goto(WhatsWebURL, {
             waitUntil: 'load',
             timeout: 0,
             referer: 'https://whatsapp.com/'
         });
+        this.emit(Events.SPHERE_LOG, "initialize: gone to WhatsAppWebUrl - about to inject");
 
         await this.inject();
+        this.emit(Events.SPHERE_LOG, "initialize: injected");
 
         this.pupPage.on('framenavigated', async (frame) => {
             if(frame.url().includes('post_logout=1') || this.lastLoggedOut) {
@@ -424,6 +447,7 @@ class Client extends EventEmitter {
             }
             await this.inject();
         });
+        this.emit(Events.SPHERE_LOG, "initialize: frame navigated set up - completed Initialization");
     }
 
     /**
